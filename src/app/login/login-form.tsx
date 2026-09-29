@@ -15,24 +15,7 @@ export default function LoginForm() {
     setBusy(true)
     setError(null)
 
-    const client = createClient()
-    const { data, error } = await client.auth.signInWithPassword({ email, password })
-
-    // TEMP DIAGNOSTIC - remove once the WebView sign-in is sorted.
-    const names = document.cookie
-      .split(';')
-      .map((c) => c.split('=')[0].trim())
-      .filter(Boolean)
-    console.log('AUTHDEBUG origin=' + location.origin)
-    console.log('AUTHDEBUG emailLen=' + email.length + ' pwLen=' + password.length)
-    console.log('AUTHDEBUG cookiesEnabled=' + navigator.cookieEnabled)
-    console.log('AUTHDEBUG supabaseError=' + (error ? error.message : 'none'))
-    console.log('AUTHDEBUG supabaseStatus=' + (data ? String(data.session !== null) : 'no-data'))
-    console.log('AUTHDEBUG session=' + (data?.session ? 'yes' : 'no'))
-    console.log('AUTHDEBUG cookieNames=' + (names.join(',') || 'NONE'))
-    console.log('AUTHDEBUG canWriteCookie=' + (() => { document.cookie = 'authdebug=1'; const ok = document.cookie.includes('authdebug'); document.cookie = 'authdebug=; max-age=0'; return ok })())
-    if (remember) console.log('AUTHDEBUG remember=on')
-
+    const { error } = await createClient().auth.signInWithPassword({ email, password })
     if (error) {
       setError(error.message)
       setBusy(false)
@@ -40,8 +23,9 @@ export default function LoginForm() {
     }
 
     if (remember) {
-      // Supabase's own cookie is a 400-day session cookie, so "remember me"
-      // is mostly about not tearing the session down on this device.
+      // Supabase's own session cookie already lasts 400 days, so this only
+      // records the preference. The server refreshes the session cookie on
+      // every request, so an unchecked box cannot shorten its life.
       document.cookie = `remember_token=yes; path=/; max-age=${400 * 24 * 60 * 60}; SameSite=Lax`
     }
 
