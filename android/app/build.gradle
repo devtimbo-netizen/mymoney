@@ -11,8 +11,8 @@ android {
         // launcher and Settings icon cache on package name plus versionCode, so
         // reinstalling with an unchanged versionCode serves the previously
         // cached icon and the new one never appears.
-        versionCode 2
-        versionName "1.1"
+        versionCode 3
+        versionName "1.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
