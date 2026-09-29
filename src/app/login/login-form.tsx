@@ -1,0 +1,110 @@
+'use client'
+
+import { useState, type FormEvent } from 'react'
+import { createClient } from '@/lib/supabase/client'
+
+export default function LoginForm() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+
+    const client = createClient()
+    const { data, error } = await client.auth.signInWithPassword({ email, password })
+
+    // TEMP DIAGNOSTIC - remove once the WebView sign-in is sorted.
+    const names = document.cookie
+      .split(';')
+      .map((c) => c.split('=')[0].trim())
+      .filter(Boolean)
+    console.log('AUTHDEBUG origin=' + location.origin)
+    console.log('AUTHDEBUG emailLen=' + email.length + ' pwLen=' + password.length)
+    console.log('AUTHDEBUG cookiesEnabled=' + navigator.cookieEnabled)
+    console.log('AUTHDEBUG supabaseError=' + (error ? error.message : 'none'))
+    console.log('AUTHDEBUG supabaseStatus=' + (data ? String(data.session !== null) : 'no-data'))
+    console.log('AUTHDEBUG session=' + (data?.session ? 'yes' : 'no'))
+    console.log('AUTHDEBUG cookieNames=' + (names.join(',') || 'NONE'))
+    console.log('AUTHDEBUG canWriteCookie=' + (() => { document.cookie = 'authdebug=1'; const ok = document.cookie.includes('authdebug'); document.cookie = 'authdebug=; max-age=0'; return ok })())
+    if (remember) console.log('AUTHDEBUG remember=on')
+
+    if (error) {
+      setError(error.message)
+      setBusy(false)
+      return
+    }
+
+    if (remember) {
+      // Supabase's own cookie is a 400-day session cookie, so "remember me"
+      // is mostly about not tearing the session down on this device.
+      document.cookie = `remember_token=yes; path=/; max-age=${400 * 24 * 60 * 60}; SameSite=Lax`
+    }
+
+    // A full document load, not a client-side route change. The session was
+    // just written to a cookie, and a soft navigation can be sent before the
+    // browser has committed it - which in the Android WebView shows up as
+    // signing in and being bounced straight back to /login.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign('/sheet')
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-300">
+          Email
+        </label>
+        <input
+          id="email"
+          type="email"
+          required
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
+        />
+      </div>
+      <div>
+        <label htmlFor="password" className="mb-1 block text-sm font-medium text-slate-300">
+          Password
+        </label>
+        <input
+          id="password"
+          type="password"
+          required
+          minLength={6}
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
+        />
+      </div>
+      <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+        <input
+          type="checkbox"
+          checked={remember}
+          onChange={(e) => setRemember(e.target.checked)}
+          className="h-4 w-4 accent-emerald-500"
+        />
+        Remember me
+      </label>
+      {error && (
+        <p role="alert" className="rounded-lg bg-red-950 px-3 py-2 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+      <button
+        type="submit"
+        disabled={busy}
+        className="w-full rounded-lg bg-emerald-500 px-4 py-2 font-medium text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50"
+      >
+        {busy ? 'Signing in…' : 'Sign in'}
+      </button>
+    </form>
+  )
+}
