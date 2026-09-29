@@ -25,11 +25,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <div className="mm-backdrop" aria-hidden="true">
-          <div className="mm-blob mm-blob--gold-a" />
-          <div className="mm-blob mm-blob--blue-a" />
-          <div className="mm-blob mm-blob--gold-b" />
-          <div className="mm-blob mm-blob--blue-b" />
-          <div className="mm-lines" />
+          <div className="mm-wave mm-wave--gold-1" />
+          <div className="mm-wave mm-wave--blue-1" />
+          <div className="mm-wave mm-wave--gold-2" />
+          <div className="mm-wave mm-wave--blue-2" />
           <div className="mm-veil" />
         </div>
         {children}
