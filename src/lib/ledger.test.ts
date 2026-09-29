@@ -10,6 +10,7 @@ import {
   balancesByAccount,
   buildTransfer,
   byNewest,
+  currentBalanceFor,
   formatStamp,
   fromLocalInput,
   isFilterActive,
@@ -158,6 +159,29 @@ check(
 check('entries with no account are grouped separately', balancesByAccount([tx('in', 5)]).get(''), 5)
 check('account with no entries is simply absent from the map', perAccount.has('a-savings'), false)
 check('accountBalance reads one account', accountBalance(pool, 'a-card'), -35)
+
+// A correction must only move the scope it was aimed at. Correcting one account
+// to 120 while the total is 735 used to book a 615 withdrawal into that account
+// and wreck the other one; the scope decides what the correction is measured
+// against, and the others must not move.
+const scoped = [
+  tx('in', 100, '2026-04-01T09:00:00.000Z', { account_id: 'a-cash' }),
+  tx('in', 200, '2026-04-02T09:00:00.000Z', { account_id: 'a-bank' }),
+]
+check('total scope reads the combined balance', currentBalanceFor(scoped, 'total', null), 300)
+check('account scope reads just that account', currentBalanceFor(scoped, 'account', 'a-cash'), 100)
+check('account scope works for the other account too', currentBalanceFor(scoped, 'account', 'a-bank'), 200)
+check('a missing account id measures from zero', currentBalanceFor(scoped, 'account', 'a-nope'), 0)
+
+const cashFix = adjustmentFor(currentBalanceFor(scoped, 'account', 'a-cash'), 120)
+check('correcting one account books only its own shortfall', cashFix, { kind: 'in', amount: 20 })
+const afterCashFix = [...scoped, { ...tx('in', cashFix!.amount), account_id: 'a-cash' }]
+check('the corrected account now matches the real figure', accountBalance(afterCashFix, 'a-cash'), 120)
+check('the untouched account is left alone', accountBalance(afterCashFix, 'a-bank'), 200)
+check('the total only moved by the correction', balance(afterCashFix), 320)
+
+const totalFix = adjustmentFor(currentBalanceFor(scoped, 'total', null), 350)
+check('correcting the total books the full difference', totalFix, { kind: 'in', amount: 50 })
 check('accountBalance of an untouched account is zero', accountBalance(pool, 'a-savings'), 0)
 
 // A transfer is a matched pair, so the two accounts each move by the amount and

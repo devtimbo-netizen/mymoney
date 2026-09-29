@@ -16,6 +16,7 @@ import {
   balance,
   balancesByAccount,
   buildTransfer,
+  currentBalanceFor,
   formatStamp,
   fromLocalInput,
   isFilterActive,
@@ -28,6 +29,7 @@ import {
   totalOut,
   withRunningBalance,
   type Account,
+  type AdjustScope,
   type Category,
   type Filters,
   type Kind,
@@ -96,8 +98,15 @@ export default function BalanceTracker({
   const isFiltered = isFilterActive(filters)
   const showAdmin = isAdmin(email)
 
-  async function applyAdjustment(targetBalance: number, accountId: string) {
-    const adj = adjustmentFor(overall, targetBalance)
+  async function applyAdjustment(
+    targetBalance: number,
+    accountId: string,
+    scope: AdjustScope,
+  ) {
+    // Measure against the scope the user picked, never always the grand total.
+    // Measuring a single-account correction against the total books a huge
+    // phantom entry that drags every other account with it.
+    const adj = adjustmentFor(currentBalanceFor(transactions, scope, accountId || null), targetBalance)
     if (!adj) return
     setSaving(true)
     setError(null)
@@ -709,7 +718,8 @@ export default function BalanceTracker({
             email={email}
             transactions={transactions}
             accounts={accounts}
-            currentBalance={overall}
+            overallBalance={overall}
+            accountBalances={perAccount}
             currency={currency}
             format={money}
             onAdjust={applyAdjustment}

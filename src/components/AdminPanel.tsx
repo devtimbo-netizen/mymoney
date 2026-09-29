@@ -5,6 +5,7 @@ import {
   adjustmentFor,
   formatStamp,
   isLive,
+  type AdjustScope,
   type Transaction,
 } from '@/lib/ledger'
 import { parseAmount } from '@/lib/currency'
@@ -28,7 +29,8 @@ export function AdminPanel({
   email,
   transactions,
   accounts,
-  currentBalance,
+  overallBalance,
+  accountBalances,
   currency,
   format,
   onAdjust,
@@ -42,10 +44,11 @@ export function AdminPanel({
   email: string
   transactions: Transaction[]
   accounts: { id: string; name: string }[]
-  currentBalance: number
+  overallBalance: number
+  accountBalances: Map<string, number>
   currency: string
   format: (n: number) => string
-  onAdjust: (target: number, accountId: string) => Promise<void>
+  onAdjust: (target: number, accountId: string, scope: AdjustScope) => Promise<void>
   onRestore: (id: string) => Promise<void>
   onDelete: (t: Transaction) => Promise<void>
   onEdit: (t: Transaction) => void
@@ -54,6 +57,7 @@ export function AdminPanel({
   error: string | null
 }) {
   const [target, setTarget] = useState('')
+  const [scope, setScope] = useState<AdjustScope>(accounts.length > 1 ? 'account' : 'total')
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? '')
 
   if (!isAdmin(email)) return null
@@ -61,33 +65,57 @@ export function AdminPanel({
   const hidden = transactions.filter((t) => !isLive(t))
   const live = transactions.filter(isLive)
   const parsed = parseAmount(target)
-  const preview = parsed === null ? null : adjustmentFor(currentBalance, parsed)
+
+  // The correction is measured against whatever the user is actually fixing, so
+  // a single-account fix never books a phantom entry sized by the grand total.
+  const current = scope === 'total' ? overallBalance : accountBalances.get(accountId) ?? 0
+  const preview = parsed === null ? null : adjustmentFor(current, parsed)
+  const accountName = accounts.find((a) => a.id === accountId)?.name
+  const correctingAccount = scope === 'account' && Boolean(accountName)
 
   return (
     <section className="space-y-4">
       <div className="rounded-2xl border border-amber-800/60 bg-amber-950/25 p-4">
         <h2 className="text-sm font-semibold text-amber-200">Correct the balance</h2>
         <p className="mt-1 text-xs text-amber-200/70">
-          Your records say <span className="tabular-nums">{format(currentBalance)}</span>. Type what
+          Your records say <span className="tabular-nums">{format(current)}</span>. Type what
           your bank actually says, and one clearly-labelled adjustment entry will be added to make
           them agree. No fake income or withdrawal, and you can delete the adjustment later.
         </p>
 
         <div className="mt-3 space-y-3">
-          <label className="block">
-            <span className="mb-1 block text-sm text-slate-300">Real balance</span>
-            <input
-              value={target}
-              onChange={(e) => setTarget(e.target.value)}
-              inputMode="decimal"
-              placeholder={String(currentBalance)}
-              className="min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-base"
-            />
-          </label>
+          {accounts.length > 1 && (
+            <div>
+              <span className="mb-1 block text-sm text-slate-300">Which is wrong?</span>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    ['account', 'One account'],
+                    ['total', 'All of them'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setScope(value)}
+                    className={`min-h-[44px] rounded-lg border px-3 text-sm ${
+                      scope === value
+                        ? 'border-amber-400 bg-amber-500/20 text-amber-100'
+                        : 'border-slate-700 bg-slate-950 text-slate-400'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {accounts.length > 1 && (
             <label className="block">
-              <span className="mb-1 block text-sm text-slate-300">Which account is off?</span>
+              <span className="mb-1 block text-sm text-slate-300">
+                {scope === 'account' ? 'Account to correct' : 'Book it against'}
+              </span>
               <select
                 value={accountId}
                 onChange={(e) => setAccountId(e.target.value)}
@@ -95,18 +123,41 @@ export function AdminPanel({
               >
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.name}
+                    {a.name} ({format(accountBalances.get(a.id) ?? 0)})
                   </option>
                 ))}
               </select>
             </label>
           )}
 
+          <label className="block">
+            <span className="mb-1 block text-sm text-slate-300">
+              {scope === 'account' && accountName
+                ? `Real balance for ${accountName}`
+                : 'Real balance for everything'}
+            </span>
+            <input
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              inputMode="decimal"
+              placeholder={String(current)}
+              className="min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-base"
+            />
+          </label>
+
           {preview && (
             <p className="rounded-lg bg-slate-950/60 px-3 py-2 text-xs text-slate-300">
               This will add one {preview.kind === 'in' ? 'money in' : 'money out'} entry of{' '}
-              <span className="tabular-nums">{format(preview.amount)}</span>, bringing the balance to{' '}
-              <span className="tabular-nums">{format(parsed as number)}</span>.
+              <span className="tabular-nums">{format(preview.amount)}</span> to{' '}
+              {correctingAccount ? accountName : accounts.find((a) => a.id === accountId)?.name ?? 'no account'},
+              bringing that to <span className="tabular-nums">{format(parsed as number)}</span>
+              {correctingAccount && (
+                <>
+                  {' '}
+                  and leaving your other accounts untouched (new total{' '}
+                  <span className="tabular-nums">{format(overallBalance + preview.amount * (preview.kind === 'in' ? 1 : -1))}</span>).
+                </>
+              )}
             </p>
           )}
           {parsed !== null && !preview && (
@@ -121,11 +172,13 @@ export function AdminPanel({
             onClick={() => {
               if (!preview || parsed === null) return
               setTarget('')
-              void onAdjust(parsed, accountId)
+              void onAdjust(parsed, accountId, scope)
             }}
             className="min-h-[44px] w-full rounded-lg bg-amber-500 px-4 font-medium text-slate-950 disabled:opacity-40"
           >
-            {preview ? `Add adjustment and set balance to ${format(parsed as number)}` : 'Nothing to adjust'}
+            {preview
+              ? `Add adjustment to ${accountName ?? 'your accounts'}: ${format(parsed as number)}`
+              : 'Nothing to adjust'}
           </button>
         </div>
       </div>

@@ -105,6 +105,27 @@ export function accountBalance(transactions: Transaction[], accountId: string): 
   return balancesByAccount(transactions).get(accountId) ?? 0
 }
 
+/** Which balance a correction is measured against. */
+export type AdjustScope = 'account' | 'total'
+
+/**
+ * The number a correction should be compared to.
+ *
+ * This has to be explicit, because measuring every correction against the
+ * grand total silently rewrites the other accounts. Correcting one account to
+ * 120 while the total is 300 used to book a 180 withdrawal into that account,
+ * dragging the others along. When the scope is 'account', only that account
+ * moves; the others keep their own figures.
+ */
+export function currentBalanceFor(
+  transactions: Transaction[],
+  scope: AdjustScope,
+  accountId: string | null,
+): number {
+  if (scope === 'total') return balance(transactions)
+  return accountBalance(transactions, accountId ?? '')
+}
+
 
 /** Rounds to whole cents, avoiding float drift like 770.0000000001. */
 export function round2(n: number): number {
