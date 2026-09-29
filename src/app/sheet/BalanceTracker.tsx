@@ -376,8 +376,8 @@ export default function BalanceTracker({
     'min-h-[40px] shrink-0 rounded-full border px-4 py-2 text-sm transition-colors'
 
   return (
-    <div className="min-h-dvh bg-slate-950 text-slate-100">
-      <header className="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
+    <div className="min-h-dvh bg-slate-950/55 text-slate-100 backdrop-blur-[2px]">
+      <header className="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/75 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-3">
           {showAdmin && (
             <button

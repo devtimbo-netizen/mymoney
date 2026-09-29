@@ -23,7 +23,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <div className="mm-backdrop" aria-hidden="true">
+          <div className="mm-blob mm-blob--gold-a" />
+          <div className="mm-blob mm-blob--blue-a" />
+          <div className="mm-blob mm-blob--gold-b" />
+          <div className="mm-blob mm-blob--blue-b" />
+          <div className="mm-lines" />
+          <div className="mm-veil" />
+        </div>
+        {children}
+      </body>
     </html>
   );
 }

@@ -7,7 +7,7 @@ export default function LoginPage() {
   if (!isSupabaseConfigured) return <SetupNotice />
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+    <main className="flex min-h-screen items-center justify-center bg-slate-950/55 px-4 backdrop-blur-[2px]">
       <div className="w-full max-w-sm">
         <h1 className="mb-6 text-center text-2xl font-semibold text-slate-100">My Money</h1>
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-xl">

@@ -98,7 +98,7 @@ export default async function SheetPage() {
 
   if (txError) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-slate-950 px-4">
+      <main className="flex min-h-dvh items-center justify-center bg-slate-950/55 px-4 backdrop-blur-[2px]">
         <div className="max-w-md rounded-2xl border border-red-900 bg-red-950/40 p-6 text-sm text-red-300">
           <h1 className="mb-2 text-base font-semibold">Could not load your account</h1>
           <p>{txError.message}</p>
