@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Adaptive icon for Cashio: gold C and ascending bars on a navy gradient.
-  Points at the vector drawables rather than the stock mipmap PNGs, which are
-  only used by launchers older than API 26.
+  Adaptive icon for Cashio: gold C with ascending bars on a navy gradient.
+
+  The mark lives in @drawable/cashio_mark rather than ic_launcher_foreground.
+  AAPT collapses a drawable/ and drawable-v24/ pair with the same name down to
+  the qualified variant, which left the adaptive icon pointing at a resource
+  that was not in the APK. Android fell back to the stock Android robot. An
+  unqualified name cannot be shadowed, so this is stable.
 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_bg"/>
-    <foreground android:drawable="@drawable/ic_launcher_foreground"/>
-    <monochrome android:drawable="@drawable/ic_launcher_foreground"/>
+    <foreground android:drawable="@drawable/cashio_mark"/>
+    <monochrome android:drawable="@drawable/cashio_mark"/>
 </adaptive-icon>
