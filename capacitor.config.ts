@@ -33,7 +33,7 @@ if (serverUrl.includes('supabase.co')) {
 
 const config: CapacitorConfig = {
   appId: 'com.mymoney.tracker',
-  appName: 'My Money',
+  appName: 'Cashio',
   webDir: 'public',
   server: {
     url: serverUrl,

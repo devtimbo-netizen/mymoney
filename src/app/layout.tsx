@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "My Money",
+  title: "Cashio",
   description: "A personal balance tracker. You enter the numbers; it keeps the running total.",
 };
 
